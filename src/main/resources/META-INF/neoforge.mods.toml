@@ -1,0 +1,25 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="nucleocraft_radiation"
+version="0.1.1-alpha"
+displayName="NucleoCraft: Radiation"
+description='''
+Alpha-first radiation engine rewrite: isotope dust, inhalation, and player contamination.
+'''
+
+[[dependencies.nucleocraft_radiation]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.235,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.nucleocraft_radiation]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"
