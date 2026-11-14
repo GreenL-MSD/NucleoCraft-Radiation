@@ -1,5 +1,6 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.server.alpha;
 
+import com.nucleocraft.radiation.server.data.IsotopeNBT;
 import com.nucleocraft.radiation.core.IsotopeInventory;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -23,14 +24,14 @@ public final class AlphaItemStorage {
     public static IsotopeInventory material(ItemStack stack) {
         if(stack.isEmpty())return null;
         CompoundTag tag=root(stack);
-        return tag.contains(MAT,Tag.TAG_COMPOUND)?AlphaNBT.read(tag.getCompound(MAT)):null;
+        return tag.contains(MAT,Tag.TAG_COMPOUND)?IsotopeNBT.read(tag.getCompound(MAT)):null;
     }
     /** Stored as physical quantity PER ITEM so stack splitting does not multiply matter. */
     public static void material(ItemStack stack,IsotopeInventory value) {
         if(stack.isEmpty())return;
         CompoundTag tag=root(stack);
         if(value==null||value.isEmpty())tag.remove(MAT);
-        else tag.put(MAT,AlphaNBT.write(value));
+        else tag.put(MAT,IsotopeNBT.write(value));
         save(stack,tag);
     }
     public static double syntheticAlpha(ItemStack stack) {

@@ -1,8 +1,9 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.server.alpha;
 
-import com.nucleocraft.radiation.core.AlphaDustDistribution;
+import com.nucleocraft.radiation.server.data.ChunkRadiationData;
+import com.nucleocraft.radiation.radiation.alpha.AlphaDustDistribution;
 import com.nucleocraft.radiation.core.IsotopeInventory;
-import com.nucleocraft.radiation.world.AlphaDustRegistry;
+import com.nucleocraft.radiation.world.alpha.AlphaDustRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -41,25 +42,25 @@ public final class AlphaDustTransport {
         BlockState state=level.getBlockState(dust);
         if(!state.isAir()&&!state.is(AlphaDustRegistry.DUST.get()))return false;
         if(material.totalUnits()<VISIBLE_MINIMUM&&!state.is(AlphaDustRegistry.DUST.get())) {
-            return addOnBlock(level,support,ChunkAlphaData.Carrier.SURFACE_RESIDUE,material,now);
+            return addOnBlock(level,support,ChunkRadiationData.Carrier.SURFACE_RESIDUE,material,now);
         }
-        ChunkAlphaData.Deposit old=AlphaWorld.deposit(level,dust);
+        ChunkRadiationData.Deposit old=AlphaWorld.deposit(level,dust);
         IsotopeInventory total=old==null?material.at(now):old.material().plus(material,now);
         int layers=Math.max(1,Math.min(8,(int)Math.ceil(Math.sqrt(total.totalUnits())*1.9)));
         BlockState target=AlphaDustRegistry.DUST.get().defaultBlockState().setValue(SnowLayerBlock.LAYERS,layers);
         if(!level.setBlock(dust,target,3))return false;
-        AlphaWorld.setDeposit(level,dust,new ChunkAlphaData.Deposit(
-                ChunkAlphaData.Carrier.LOOSE_DUST,AlphaWorld.blockId(level,dust),total));
+        AlphaWorld.setDeposit(level,dust,new ChunkRadiationData.Deposit(
+                ChunkRadiationData.Carrier.LOOSE_DUST,AlphaWorld.blockId(level,dust),total));
         return true;
     }
-    public static boolean addOnBlock(ServerLevel level,BlockPos pos,ChunkAlphaData.Carrier carrier,
+    public static boolean addOnBlock(ServerLevel level,BlockPos pos,ChunkRadiationData.Carrier carrier,
                                      IsotopeInventory material,long now) {
         if(material==null||material.isEmpty())return true;
         if(!AlphaWorld.loaded(level,pos)||level.getBlockState(pos).isAir())return false;
-        ChunkAlphaData.Deposit old=AlphaWorld.deposit(level,pos);
+        ChunkRadiationData.Deposit old=AlphaWorld.deposit(level,pos);
         if(old!=null&&old.carrier()!=carrier)carrier=old.carrier();
         IsotopeInventory total=old==null?material.at(now):old.material().plus(material,now);
-        AlphaWorld.setDeposit(level,pos,new ChunkAlphaData.Deposit(carrier,AlphaWorld.blockId(level,pos),total));
+        AlphaWorld.setDeposit(level,pos,new ChunkRadiationData.Deposit(carrier,AlphaWorld.blockId(level,pos),total));
         return true;
     }
     /** Deterministic 3D 2-block radius, with half-distance weighting normalised
@@ -106,7 +107,7 @@ public final class AlphaDustTransport {
             if(part==0)continue;
             IsotopeInventory share=surface.scaled(part);
             boolean succeeded=absorbs(level.getBlockState(target.location().below()))
-                    ?addOnBlock(level,target.location().below(),ChunkAlphaData.Carrier.ABSORBED,share,now)
+                    ?addOnBlock(level,target.location().below(),ChunkRadiationData.Carrier.ABSORBED,share,now)
                     :addLoose(level,target.location(),share,now);
             if(succeeded)remaining=subtract(remaining,share);
             sent+=part;

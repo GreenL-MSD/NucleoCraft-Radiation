@@ -4,10 +4,10 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="nucleocraft_radiation"
-version="0.1.1-alpha"
+version="0.2.0-beta-dev"
 displayName="NucleoCraft: Radiation"
 description='''
-Alpha-first radiation engine rewrite: isotope dust, inhalation, and player contamination.
+Alpha-stable radiation engine, Beta physical contamination and exposure, and live Alpha/Beta debug labels.
 '''
 
 [[dependencies.nucleocraft_radiation]]

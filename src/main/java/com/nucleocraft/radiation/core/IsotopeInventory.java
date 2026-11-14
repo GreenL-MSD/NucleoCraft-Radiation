@@ -48,6 +48,16 @@ public final class IsotopeInventory {
         }
         return sum;
     }
+    /** Beta emitted activity derives from the very same material inventory as Alpha. */
+    public double betaEmissions(long millis) {
+        double sum=0;
+        long delta=Math.max(0,millis-epoch);
+        for(var entry:units.entrySet()) {
+            IsotopeDefinition d=IsotopeDefinitions.require(entry.getKey());
+            sum+=entry.getValue()*d.remainingFraction(delta/1000.0)*d.betaEmissionPerUnit();
+        }
+        return sum;
+    }
     public IsotopeInventory scaled(double f) {
         if(!Double.isFinite(f)||f<0||f>1)throw new IllegalArgumentException("Fraction must be 0..1");
         Map<String,Double> m=new LinkedHashMap<>();

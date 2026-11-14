@@ -1,4 +1,4 @@
-package com.nucleocraft.radiation.world;
+package com.nucleocraft.radiation.world.alpha;
 
 import com.nucleocraft.radiation.NucleoCraftRadiation;
 import net.minecraft.world.level.block.SnowLayerBlock;

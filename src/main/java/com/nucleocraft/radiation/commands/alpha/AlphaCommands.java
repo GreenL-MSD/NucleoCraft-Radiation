@@ -1,14 +1,21 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.commands.alpha;
 
+import com.nucleocraft.radiation.server.alpha.AlphaDustTransport;
+import com.nucleocraft.radiation.server.alpha.AlphaItemStorage;
+import com.nucleocraft.radiation.server.alpha.AlphaSimulation;
+import com.nucleocraft.radiation.server.alpha.AlphaWorld;
+import com.nucleocraft.radiation.server.alpha.PlayerAlphaAttachment;
+import com.nucleocraft.radiation.server.data.ChunkRadiationData;
+import com.nucleocraft.radiation.server.data.RadiationAttachments;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.nucleocraft.radiation.core.IsotopeDefinitions;
 import com.nucleocraft.radiation.core.IsotopeInventory;
-import com.nucleocraft.radiation.core.PlayerAlphaState;
-import com.nucleocraft.radiation.radiation.profiles.AlphaRadiationProfile;
-import com.nucleocraft.radiation.world.AlphaDustRegistry;
+import com.nucleocraft.radiation.player.alpha.PlayerAlphaState;
+import com.nucleocraft.radiation.radiation.profiles.alpha.AlphaRadiationProfile;
+import com.nucleocraft.radiation.world.alpha.AlphaDustRegistry;
 import java.util.Locale;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -143,9 +150,9 @@ public final class AlphaCommands {
                     err(src,"Cannot deposit on that dust layer.");return 0;
                 }
             } else if(AlphaDustTransport.absorbs(level.getBlockState(pos))) {
-                if(!AlphaDustTransport.addOnBlock(level,pos,ChunkAlphaData.Carrier.ABSORBED,amount,now))return 0;
+                if(!AlphaDustTransport.addOnBlock(level,pos,ChunkRadiationData.Carrier.ABSORBED,amount,now))return 0;
             } else if(!AlphaDustTransport.addLoose(level,pos.above(),amount,now)
-                    && !AlphaDustTransport.addOnBlock(level,pos,ChunkAlphaData.Carrier.SURFACE_RESIDUE,amount,now)) {
+                    && !AlphaDustTransport.addOnBlock(level,pos,ChunkRadiationData.Carrier.SURFACE_RESIDUE,amount,now)) {
                 err(src,"Target was not a suitable solid support.");return 0;
             }
         }
@@ -179,7 +186,7 @@ public final class AlphaCommands {
             var dep=AlphaWorld.deposit(level,pos);
             if(dep==null&&!AlphaWorld.isDust(level,pos)) {
                 var above=AlphaWorld.deposit(level,pos.above());
-                if(above!=null&&above.carrier()==ChunkAlphaData.Carrier.LOOSE_DUST)dep=above;
+                if(above!=null&&above.carrier()==ChunkRadiationData.Carrier.LOOSE_DUST)dep=above;
             }
             IsotopeInventory m=dep==null?null:dep.material();
             double synthetic=AlphaWorld.synthetic(level,pos);
@@ -191,15 +198,15 @@ public final class AlphaCommands {
     }
     private static int status(CommandSourceStack src)throws CommandSyntaxException {
         ServerPlayer player=src.getPlayerOrException();
-        PlayerAlphaState s=player.getData(AlphaAttachments.PLAYER.get()).state();
+        PlayerAlphaState s=player.getData(RadiationAttachments.PLAYER.get()).state();
         long now=System.currentTimeMillis();
-        msg(src,String.format(Locale.ROOT,"Alpha | accumulated %.3f RAD | internal %.5f RAD/s | external absorbed 0 RAD/s",
+        msg(src,String.format(Locale.ROOT,"Radiation | accumulated %.3f RAD (Alpha+Beta) | internal Alpha %.5f RAD/s | external Alpha 0 RAD/s",
                 s.accumulatedRad(),s.internalDoseRate(now)));
         return 1;
     }
     private static int internal(CommandSourceStack src)throws CommandSyntaxException {
         ServerPlayer player=src.getPlayerOrException();
-        PlayerAlphaState s=player.getData(AlphaAttachments.PLAYER.get()).state();long now=System.currentTimeMillis();
+        PlayerAlphaState s=player.getData(RadiationAttachments.PLAYER.get()).state();long now=System.currentTimeMillis();
         s.advance(now);
         msg(src,"Inhaled: "+label(s.inhaled(),now));
         msg(src,"Ingested: "+label(s.ingested(),now));
@@ -209,7 +216,7 @@ public final class AlphaCommands {
     }
     private int debugAlpha(CommandSourceStack src)throws CommandSyntaxException {
         ServerPlayer p=src.getPlayerOrException();
-        PlayerAlphaState player=p.getData(AlphaAttachments.PLAYER.get()).state();
+        PlayerAlphaState player=p.getData(RadiationAttachments.PLAYER.get()).state();
         msg(src,String.format(Locale.ROOT,"Alpha profile | external absorption %.1f | internal weight %.1f | clouds queued %d | releases queued %d | internal rate %.6f RAD/s",
                 AlphaRadiationProfile.INSTANCE.externalAbsorbedRate(100),
                 AlphaRadiationProfile.INTERNAL_WEIGHT,simulation.queuedClouds(),simulation.queuedReleases(),
@@ -221,10 +228,10 @@ public final class AlphaCommands {
         ServerPlayer player=src.getPlayerOrException();
         IsotopeInventory amount;
         try{amount=physical(src,isotope,units);}catch(IllegalArgumentException bad){err(src,bad.getMessage());return 0;}
-        var attachment=player.getData(AlphaAttachments.PLAYER.get());
+        var attachment=player.getData(RadiationAttachments.PLAYER.get());
         if(ingested)attachment.state().ingest(amount,System.currentTimeMillis());
         else attachment.state().inhale(amount,System.currentTimeMillis());
-        player.setData(AlphaAttachments.PLAYER.get(),attachment);
+        player.setData(RadiationAttachments.PLAYER.get(),attachment);
         msg(src,String.format(Locale.ROOT,"DEBUG: %s %.5f physical units of [%s] into player (no world material created).",
                 ingested?"ingested":"inhaled",units,IsotopeDefinitions.require(isotope).displayName()));
         return 1;
@@ -246,10 +253,10 @@ public final class AlphaCommands {
     }
     private static int reset(CommandSourceStack src)throws CommandSyntaxException {
         ServerPlayer player=src.getPlayerOrException();
-        PlayerAlphaAttachment data=player.getData(AlphaAttachments.PLAYER.get());
+        PlayerAlphaAttachment data=player.getData(RadiationAttachments.PLAYER.get());
         data.reset(System.currentTimeMillis());
-        player.setData(AlphaAttachments.PLAYER.get(),data);
-        msg(src,"Reset accumulated Alpha RAD and internal isotope contamination for testing.");return 1;
+        player.setData(RadiationAttachments.PLAYER.get(),data);
+        msg(src,"Reset combined accumulated RAD and internal isotope contamination for testing.");return 1;
     }
     private int perf(CommandSourceStack src) {
         Runtime vm=Runtime.getRuntime();

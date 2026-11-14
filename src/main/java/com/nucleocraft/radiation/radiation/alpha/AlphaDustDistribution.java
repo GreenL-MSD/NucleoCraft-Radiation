@@ -1,4 +1,4 @@
-package com.nucleocraft.radiation.core;
+package com.nucleocraft.radiation.radiation.alpha;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,5 @@
-package com.nucleocraft.radiation.radiation.profiles;
+package com.nucleocraft.radiation.radiation.profiles.alpha;
+import com.nucleocraft.radiation.radiation.profiles.RadiationProfile;
 
 /** Alpha radiation's biological behaviour. It does NOT move isotope matter.
  * Loose dust transport is a physical material event elsewhere in the engine.

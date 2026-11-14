@@ -1,8 +1,9 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.server.alpha;
 
+import com.nucleocraft.radiation.server.data.ChunkRadiationData;
 import com.nucleocraft.radiation.core.IsotopeInventory;
-import com.nucleocraft.radiation.core.AlphaDustInteraction;
-import com.nucleocraft.radiation.world.AlphaDustRegistry;
+import com.nucleocraft.radiation.radiation.alpha.AlphaDustInteraction;
+import com.nucleocraft.radiation.world.alpha.AlphaDustRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -38,8 +39,8 @@ public final class AlphaBlockEvents {
         }
         IsotopeInventory material=AlphaItemStorage.material(stack);
         if(material!=null&&!material.isEmpty()) {
-            AlphaWorld.setDeposit(level,pos,new ChunkAlphaData.Deposit(
-                    ChunkAlphaData.Carrier.ABSORBED,AlphaWorld.blockId(level,pos),material));
+            AlphaWorld.setDeposit(level,pos,new ChunkRadiationData.Deposit(
+                    ChunkRadiationData.Carrier.ABSORBED,AlphaWorld.blockId(level,pos),material));
         }
         double synthetic=AlphaItemStorage.syntheticAlpha(stack);
         if(synthetic>0)AlphaWorld.synthetic(level,pos,synthetic);
@@ -57,14 +58,14 @@ public final class AlphaBlockEvents {
                 AlphaDustTransport.puff(level,pos,7); // visual feedback only; no airborne isotope
                 return;
             }
-            ChunkAlphaData.Deposit record=AlphaWorld.takeDeposit(level,pos);
+            ChunkRadiationData.Deposit record=AlphaWorld.takeDeposit(level,pos);
             if(record!=null)simulation.scheduleRelease(level,pos,record.material());
             else AlphaDustTransport.puff(level,pos,14);
             return;
         }
         if(event.getPlayer().isCreative()) {
-            ChunkAlphaData.Deposit record=AlphaWorld.takeDeposit(level,pos);
-            if(record!=null&&record.carrier()==ChunkAlphaData.Carrier.SURFACE_RESIDUE)
+            ChunkRadiationData.Deposit record=AlphaWorld.takeDeposit(level,pos);
+            if(record!=null&&record.carrier()==ChunkRadiationData.Carrier.SURFACE_RESIDUE)
                 simulation.scheduleRelease(level,pos.above(),record.material());
             AlphaWorld.synthetic(level,pos,0);
         }
@@ -77,8 +78,8 @@ public final class AlphaBlockEvents {
         if(event.getState().is(AlphaDustRegistry.DUST.get())) {
             event.getDrops().clear();
             // Normally the BreakEvent already moved it; this also covers nonplayer breaks.
-            ChunkAlphaData chunk=AlphaWorld.readChunk(level,pos);
-            ChunkAlphaData.Deposit leftover=chunk==null?null:chunk.deposit(pos);
+            ChunkRadiationData chunk=AlphaWorld.readChunk(level,pos);
+            ChunkRadiationData.Deposit leftover=chunk==null?null:chunk.deposit(pos);
             if(leftover!=null) {
                 AlphaWorld.setDeposit(level,pos,null);
                 simulation.scheduleRelease(level,pos,leftover.material());
@@ -87,8 +88,8 @@ public final class AlphaBlockEvents {
         }
         // The state may already be air here, so read the raw chunk attachment,
         // then validate against the *broken* block state, not the new state.
-        ChunkAlphaData chunk=AlphaWorld.readChunk(level,pos);
-        ChunkAlphaData.Deposit record=chunk==null?null:chunk.deposit(pos);
+        ChunkRadiationData chunk=AlphaWorld.readChunk(level,pos);
+        ChunkRadiationData.Deposit record=chunk==null?null:chunk.deposit(pos);
         if(record!=null) {
             String broken=net.minecraft.core.registries.BuiltInRegistries.BLOCK
                     .getKey(event.getState().getBlock()).toString();
@@ -96,7 +97,7 @@ public final class AlphaBlockEvents {
         }
         if(record!=null) {
             AlphaWorld.setDeposit(level,pos,null);
-            if(record.carrier()==ChunkAlphaData.Carrier.SURFACE_RESIDUE) {
+            if(record.carrier()==ChunkRadiationData.Carrier.SURFACE_RESIDUE) {
                 simulation.scheduleRelease(level,pos.above(),record.material());
             } else if(!event.getDrops().isEmpty()) {
                 ItemEntity chosen=event.getDrops().get(0);

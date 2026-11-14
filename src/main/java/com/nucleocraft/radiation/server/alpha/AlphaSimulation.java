@@ -1,9 +1,11 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.server.alpha;
 
+import com.nucleocraft.radiation.server.data.ChunkRadiationData;
+import com.nucleocraft.radiation.server.data.RadiationAttachments;
 import com.nucleocraft.radiation.core.IsotopeInventory;
-import com.nucleocraft.radiation.core.AlphaDustInteraction;
-import com.nucleocraft.radiation.core.PlayerAlphaState;
-import com.nucleocraft.radiation.world.AlphaDustRegistry;
+import com.nucleocraft.radiation.radiation.alpha.AlphaDustInteraction;
+import com.nucleocraft.radiation.player.alpha.PlayerAlphaState;
+import com.nucleocraft.radiation.world.alpha.AlphaDustRegistry;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +22,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 /** Bounded server-only environmental work. No global per-block ticking.
@@ -54,19 +57,19 @@ public final class AlphaSimulation {
         if(!(event.getEntity() instanceof ServerPlayer replacement))return;
         if(event.isWasDeath()) {
             // Deliberate default: respawn clears old accumulated/internal dose.
-            replacement.setData(AlphaAttachments.PLAYER.get(),new PlayerAlphaAttachment());
-        } else if(event.getOriginal().hasData(AlphaAttachments.PLAYER.get())) {
+            replacement.setData(RadiationAttachments.PLAYER.get(),new PlayerAlphaAttachment());
+        } else if(event.getOriginal().hasData(RadiationAttachments.PLAYER.get())) {
             // Non-death cloning (e.g. return from End) preserves contamination.
-            replacement.setData(AlphaAttachments.PLAYER.get(),
-                    event.getOriginal().getData(AlphaAttachments.PLAYER.get()));
+            replacement.setData(RadiationAttachments.PLAYER.get(),
+                    event.getOriginal().getData(RadiationAttachments.PLAYER.get()));
         }
     }
     @SubscribeEvent public void onChunkLoad(ChunkEvent.Load event) {
         if(!(event.getLevel() instanceof ServerLevel level)||!(event.getChunk() instanceof LevelChunk chunk))return;
-        if(!chunk.hasData(AlphaAttachments.CHUNK.get()))return;
-        chunk.getData(AlphaAttachments.CHUNK.get()).cloudsSnapshot().forEach((packed,material)->
+        if(!chunk.hasData(RadiationAttachments.CHUNK.get()))return;
+        chunk.getData(RadiationAttachments.CHUNK.get()).cloudsSnapshot().forEach((packed,material)->
                 activeClouds.computeIfAbsent(level,k->new HashSet<>()).add(
-                        ChunkAlphaData.unpack(chunk.getPos().x,chunk.getPos().z,packed)));
+                        ChunkRadiationData.unpack(chunk.getPos().x,chunk.getPos().z,packed)));
     }
     @SubscribeEvent public void onChunkUnload(ChunkEvent.Unload event) {
         if(!(event.getLevel() instanceof ServerLevel level)||!(event.getChunk() instanceof LevelChunk chunk))return;
@@ -95,10 +98,10 @@ public final class AlphaSimulation {
         if(ticks%20==0) {
             for(ServerPlayer player:event.getServer().getPlayerList().getPlayers()) {
                 if(!player.isAlive()||player.isSpectator())continue;
-                PlayerAlphaAttachment attachment=player.getData(AlphaAttachments.PLAYER.get());
+                PlayerAlphaAttachment attachment=player.getData(RadiationAttachments.PLAYER.get());
                 attachment.state().tickDose(now,1.0);
                 // Resets on death are explicit; never reset internal contamination on dimension travel.
-                player.setData(AlphaAttachments.PLAYER.get(),attachment);
+                player.setData(RadiationAttachments.PLAYER.get(),attachment);
             }
             tickClouds(event.getServer(),now);
         }
@@ -109,6 +112,11 @@ public final class AlphaSimulation {
             lastGrounded.keySet().retainAll(online);
             lastDisturbance.keySet().retainAll(online);
         }
+    }
+    @SubscribeEvent public void onServerStopped(ServerStoppedEvent event) {
+        // Ephemeral queues are NEVER carried to another save in the same JVM.
+        activeClouds.clear();pendingReleases.clear();lastFeet.clear();
+        lastGrounded.clear();lastDisturbance.clear();ticks=0;
     }
     /** Movement always emits visible particles on loose dust, while only real material
      * enters the cloud. Player steps are rate-limited to prevent tick-speed extraction. */
@@ -135,12 +143,12 @@ public final class AlphaSimulation {
             if(!AlphaWorld.loaded(level,pos)||!AlphaWorld.isDust(level,pos))continue;
             lastDisturbance.put(uuid,ticks);
             AlphaDustTransport.puff(level,pos,player.isSprinting()?18:9);
-            ChunkAlphaData.Deposit deposit=AlphaWorld.deposit(level,pos);
+            ChunkRadiationData.Deposit deposit=AlphaWorld.deposit(level,pos);
             if(deposit==null||deposit.material().isEmpty())break;
             double fraction=player.isSprinting()?.04:(jumped?.05:.01);
             IsotopeInventory existing=deposit.material().at(now);
             IsotopeInventory.Split split=existing.split(fraction);
-            AlphaWorld.setDeposit(level,pos,new ChunkAlphaData.Deposit(deposit.carrier(),
+            AlphaWorld.setDeposit(level,pos,new ChunkRadiationData.Deposit(deposit.carrier(),
                     deposit.blockId(),split.remaining()));
             AlphaDustTransport.syncDust(level,pos,split.remaining());
             BlockPos cloudPos=pos.above();
@@ -166,9 +174,9 @@ public final class AlphaSimulation {
         IsotopeInventory.Split split=cloud.at(now).split(fraction);
         if(split.moved().isEmpty())return;
         AlphaWorld.cloud(level,pos,split.remaining(),now);
-        PlayerAlphaAttachment attachment=player.getData(AlphaAttachments.PLAYER.get());
+        PlayerAlphaAttachment attachment=player.getData(RadiationAttachments.PLAYER.get());
         attachment.state().inhale(split.moved(),now);
-        player.setData(AlphaAttachments.PLAYER.get(),attachment);
+        player.setData(RadiationAttachments.PLAYER.get(),attachment);
     }
     private void tickClouds(MinecraftServer server,long now) {
         int budget=CLOUD_JOBS_PER_SECOND;
@@ -191,9 +199,9 @@ public final class AlphaSimulation {
                     IsotopeInventory.Split breathed=current.split(CLOUD_INHALED_FRACTION);
                     current=breathed.remaining();
                     if(!breathed.moved().isEmpty()) {
-                        PlayerAlphaAttachment state=player.getData(AlphaAttachments.PLAYER.get());
+                        PlayerAlphaAttachment state=player.getData(RadiationAttachments.PLAYER.get());
                         state.state().inhale(breathed.moved(),now);
-                        player.setData(AlphaAttachments.PLAYER.get(),state);
+                        player.setData(RadiationAttachments.PLAYER.get(),state);
                     }
                 }
                 IsotopeInventory.Split settling=current.split(CLOUD_SETTLE_FRACTION);

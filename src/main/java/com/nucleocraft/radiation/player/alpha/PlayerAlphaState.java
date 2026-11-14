@@ -1,6 +1,7 @@
-package com.nucleocraft.radiation.core;
+package com.nucleocraft.radiation.player.alpha;
+import com.nucleocraft.radiation.core.IsotopeInventory;
 
-import com.nucleocraft.radiation.radiation.profiles.AlphaRadiationProfile;
+import com.nucleocraft.radiation.radiation.profiles.alpha.AlphaRadiationProfile;
 
 /** Two body compartments. All isotope inventories decay lazily, biological
  * elimination is independent of nuclear decay. Accumulated dose is historical.
@@ -35,6 +36,13 @@ public final class PlayerAlphaState {
     }
     public double internalDoseRate(long now) {
         return AlphaRadiationProfile.INSTANCE.internalAbsorbedRate(internalAlphaEmission(now));
+    }
+    public double internalBetaEmission(long now) {
+        advance(now);
+        return inhaled.betaEmissions(now)+ingested.betaEmissions(now);
+    }
+    public void addAbsorbedDose(double amount) {
+        if(Double.isFinite(amount)&&amount>0)accumulatedRad=Math.min(1e9,accumulatedRad+amount);
     }
     public void tickDose(long now,double seconds) {
         if(seconds<0||!Double.isFinite(seconds))throw new IllegalArgumentException("Bad seconds");

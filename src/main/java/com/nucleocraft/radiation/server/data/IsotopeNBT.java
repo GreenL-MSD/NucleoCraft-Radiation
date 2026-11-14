@@ -1,4 +1,4 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.server.data;
 
 import com.nucleocraft.radiation.core.IsotopeInventory;
 import com.nucleocraft.radiation.core.IsotopeDefinitions;
@@ -9,8 +9,8 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
 /** Strict, versioned NBT for physical isotope quantities. */
-public final class AlphaNBT {
-    private AlphaNBT() {}
+public final class IsotopeNBT {
+    private IsotopeNBT() {}
     public static CompoundTag write(IsotopeInventory material) {
         CompoundTag out=new CompoundTag();
         out.putLong("epochMillis", material.epochMillis());

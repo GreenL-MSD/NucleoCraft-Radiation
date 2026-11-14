@@ -12,13 +12,16 @@ public final class IsotopeDefinitions {
         for (IsotopeDefinition d : new IsotopeDefinition[]{
                 new IsotopeDefinition("polonium_210", "Polonium 210", 3600, 1.80),
                 new IsotopeDefinition("uranium_238", "Uranium 238", 30*86400.0, 1.00),
-                new IsotopeDefinition("americium_241", "Americium 241", 24*3600.0, 1.25)}) m.put(d.id(),d);
+                new IsotopeDefinition("americium_241", "Americium 241", 24*3600.0, 1.25),
+                new IsotopeDefinition("strontium_90", "Strontium 90", 48*3600.0, 0.0, 1.0),
+                new IsotopeDefinition("cesium_137", "Cesium 137", 72*3600.0, 0.0, 0.55),
+                new IsotopeDefinition("tritium", "Tritium", 36*3600.0, 0.0, 0.18)}) m.put(d.id(),d);
         MAP=Collections.unmodifiableMap(m);
     }
     private IsotopeDefinitions() {}
     public static IsotopeDefinition require(String id) {
         IsotopeDefinition d=MAP.get(id);
-        if (d==null) throw new IllegalArgumentException("Unknown Alpha isotope: " + id);
+        if (d==null) throw new IllegalArgumentException("Unknown isotope: " + id);
         return d;
     }
     public static Map<String,IsotopeDefinition> all() {return MAP;}

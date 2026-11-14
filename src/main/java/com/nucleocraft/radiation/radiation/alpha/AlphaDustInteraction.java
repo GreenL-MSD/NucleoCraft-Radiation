@@ -1,4 +1,4 @@
-package com.nucleocraft.radiation.core;
+package com.nucleocraft.radiation.radiation.alpha;
 
 /** Shared, dependency-free contact and one-layer dust-break rules.
  * Keeps the Alpha gameplay policy independently testable without NeoForge.

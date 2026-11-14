@@ -1,5 +1,6 @@
-package com.nucleocraft.radiation.server;
+package com.nucleocraft.radiation.client.alpha;
 
+import com.nucleocraft.radiation.server.alpha.AlphaItemStorage;
 import com.nucleocraft.radiation.core.IsotopeDefinitions;
 import com.nucleocraft.radiation.core.IsotopeInventory;
 import java.util.Locale;
@@ -15,10 +16,7 @@ public final class AlphaTooltips {
         double synthetic=AlphaItemStorage.syntheticAlpha(event.getItemStack());
         if(physical==null&&synthetic<=0)return;
         long now=System.currentTimeMillis();
-        if(physical!=null&&!physical.isEmpty()) {
-            event.getToolTip().add(colour("[Radioactive] - Contaminated",0x6EDC9B));
-            for(String isotope:physical.units().keySet())
-                event.getToolTip().add(colour("[Isotope] - ["+IsotopeDefinitions.require(isotope).displayName()+"]",0x6EDC9B));
+        if(physical!=null&&!physical.isEmpty()&&physical.alphaEmissions(now)>0) {
             event.getToolTip().add(colour(String.format(Locale.ROOT,"Alpha Emission - %.3f RAD/s",
                     physical.alphaEmissions(now)*event.getItemStack().getCount()),0xE0B75A));
         }
@@ -27,7 +25,8 @@ public final class AlphaTooltips {
             event.getToolTip().add(colour(String.format(Locale.ROOT,"Emitted - %.3f RAD/s",
                     synthetic*event.getItemStack().getCount()),0xE0B75A));
         }
-        event.getToolTip().add(colour("External absorbed Alpha - 0 RAD/s",0xAAB4BD));
+        if(synthetic>0||(physical!=null&&physical.alphaEmissions(now)>0))
+            event.getToolTip().add(colour("External absorbed Alpha - 0 RAD/s",0xAAB4BD));
     }
     private static Component colour(String s,int rgb) {
         return Component.literal(s).withStyle(style->style.withColor(TextColor.fromRgb(rgb)));
